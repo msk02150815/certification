@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="取得資格">
+<meta name="theme-color" content="#050714">
+<title>取得資格</title>
+<style>
+:root{
+  --bg:#050714; --card:#0d1230; --ink:#eef2ff; --muted:#98a3dc;
+  --line:rgba(170,185,255,.14); --acc:#a99bff;
+  --mincho:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:#050714;-webkit-text-size-adjust:100%}
+html,body{margin:0}
+::selection{background:rgba(139,123,255,.35);color:#fff}
+html.lock,html.lock body{overflow:hidden}
+button,input,label,.row,.tab{touch-action:manipulation}
+.hero,.tab,.btn,#fab,.tools button,.clr{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* 画面の文字は選択できません(選択したときに出る吹き出しや拡大鏡を防ぐため)。入力欄は今まで通り選べます。
+   文字をコピーできるようにしたい場合は、次の2行を消してください */
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+body{
+  background:var(--bg);
+  color:var(--ink);font-family:var(--sans);min-height:100vh;position:relative;z-index:0;
+  padding:calc(env(safe-area-inset-top) + 24px) max(16px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 110px) max(16px,env(safe-area-inset-left));
+}
+/* 背景の光(上は金、下は区分の紫と青) */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;will-change:transform;animation:drift 18s ease-in-out infinite alternate;
+  background:
+    radial-gradient(60vmax 40vmax at 15% 8%,rgba(139,92,255,.30),transparent 65%),
+    radial-gradient(55vmax 40vmax at 90% 30%,rgba(255,92,200,.18),transparent 65%),
+    radial-gradient(60vmax 45vmax at 30% 100%,rgba(40,200,255,.18),transparent 65%);
+}
+#app{max-width:640px;margin:0 auto}
+
+/* ヒーロー(流れる略称) */
+.hero{
+  position:relative;padding:14px 0;border:1px solid rgba(139,123,255,.55);border-radius:4px;overflow:hidden;
+  background:#070a1c repeating-radial-gradient(circle at 50% 135%,transparent 0 13px,rgba(139,123,255,.075) 13px 14px);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.45),0 14px 34px rgba(0,0,0,.35);
+}
+.hero::after{content:"";position:absolute;inset:6px;border:1px solid rgba(139,123,255,.22);border-radius:2px;pointer-events:none}
+.hero::before{
+  content:"";position:absolute;inset:6px;z-index:2;pointer-events:none;background-repeat:no-repeat;
+  background-image:
+    linear-gradient(#7fe9ff,#7fe9ff),linear-gradient(#7fe9ff,#7fe9ff),linear-gradient(#7fe9ff,#7fe9ff),linear-gradient(#7fe9ff,#7fe9ff),
+    linear-gradient(#7fe9ff,#7fe9ff),linear-gradient(#7fe9ff,#7fe9ff),linear-gradient(#7fe9ff,#7fe9ff),linear-gradient(#7fe9ff,#7fe9ff);
+  background-position:0 0,0 0,100% 0,100% 0,100% 100%,100% 100%,0 100%,0 100%;
+  background-size:20px 2px,2px 20px,20px 2px,2px 20px,20px 2px,2px 20px,20px 2px,2px 20px;
+}
+.hero{animation:rise .8s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+.sheen{
+  position:absolute;top:-10%;bottom:-10%;left:0;width:38%;z-index:1;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(190,220,255,.16),transparent);
+  transform:translateX(-150%) skewX(-20deg);animation:sheen 8s ease-in-out 1.2s infinite;
+}
+@keyframes sheen{0%,55%{transform:translateX(-150%) skewX(-20deg)}100%{transform:translateX(420%) skewX(-20deg)}}
+.lane{
+  overflow:hidden;padding:9px 0;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);
+}
+.lane+.lane{margin-top:4px}
+.track{display:flex;width:max-content;will-change:transform;animation:flow var(--dur,30s) linear infinite}
+.lane.rev .track{animation-direction:reverse}
+.hero.hold .track{animation-play-state:paused}
+@keyframes flow{to{transform:translateX(-50%)}}
+.set{display:flex;flex:none}
+.nm{
+  flex:none;margin-right:26px;padding:9px 22px;white-space:nowrap;
+  font-family:var(--mincho);font-size:24px;font-weight:800;letter-spacing:.06em;color:var(--c);
+  border:1px solid var(--c);border-radius:999px;background:rgba(255,255,255,.03);text-shadow:0 0 14px var(--c);
+  box-shadow:0 0 0 3px #070a1c,0 0 0 4px var(--c);
+  border-color:color-mix(in srgb,var(--c) 70%,transparent);
+  background:color-mix(in srgb,var(--c) 10%,transparent);
+  box-shadow:0 0 0 3px #070a1c,0 0 0 4px color-mix(in srgb,var(--c) 45%,transparent),0 0 22px color-mix(in srgb,var(--c) 25%,transparent),inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+/* 一覧表 */
+.tablewrap{margin-top:34px}
+.tablewrap h2{display:flex;align-items:center;gap:12px;font-family:var(--mincho);font-size:18px;margin:0 0 2px;letter-spacing:.06em}
+.tablewrap h2::before{content:"";width:9px;height:9px;background:var(--acc);transform:rotate(45deg);box-shadow:0 0 10px var(--acc);animation:pop .6s cubic-bezier(.3,1.5,.5,1) both}
+.tablewrap h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(139,123,255,.6),transparent);transform-origin:left;animation:grow 1s .1s cubic-bezier(.2,.8,.2,1) both}
+.note{font-size:11px;color:var(--muted);margin:0 0 4px}
+.tbl{width:100%;border-collapse:separate;border-spacing:0 7px;font-size:12.5px}
+.tbl thead th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.14em;color:var(--muted);padding:6px 6px 0}
+
+/* 区分の見出し */
+.tbl .grp th{padding:16px 2px 4px;text-align:left}
+.gh{display:flex;align-items:center;gap:10px;font-family:var(--mincho);font-size:17px;font-weight:700;letter-spacing:.06em;color:var(--c)}
+.gh::before{content:"";width:8px;height:8px;background:var(--c);transform:rotate(45deg);box-shadow:0 0 10px var(--c);animation:pop .6s cubic-bezier(.3,1.5,.5,1) both}
+.gh em{display:grid;place-items:center;min-width:22px;height:22px;border:1px solid var(--c);border-radius:50%;font-family:var(--sans);font-size:11px;font-style:normal;font-weight:600}
+.gh::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--c),transparent);opacity:.6;transform-origin:left;animation:grow .9s .1s cubic-bezier(.2,.8,.2,1) both}
+
+/* 資格の行(1行が1枚のプレート) */
+.row{cursor:pointer;animation:fade .5s ease both;animation-delay:calc(var(--i,0)*50ms)}
+@keyframes fade{from{opacity:0}}
+.row td{padding:11px 6px;vertical-align:middle;background:#0d1230;border-top:1px solid rgba(255,255,255,.17);border-bottom:1px solid rgba(0,0,0,.35)}
+.row td:first-child{padding-left:12px;border-left:1px solid var(--line);border-radius:10px 0 0 10px;box-shadow:inset 3px 0 0 var(--c)}
+.row td:last-child{padding-right:12px;border-right:1px solid var(--line);border-radius:0 10px 10px 0}
+.row.warn td:first-child{box-shadow:inset 3px 0 0 var(--u)}
+.row.warn td{background:#0d1230;background:color-mix(in srgb,var(--u) 8%,#0d1230)}
+.row.hot td:first-child{animation:throb 2.4s ease-in-out infinite}
+@keyframes throb{50%{box-shadow:inset 3px 0 0 var(--u),inset 16px 0 22px -12px var(--u)}}
+.row:active td{filter:brightness(1.3)}
+.row:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:10px}
+
+/* 略称の印章 */
+.seal{
+  display:grid;place-items:center;width:46px;height:46px;padding:3px;border-radius:50%;text-align:center;line-height:1.1;word-break:break-all;
+  color:var(--c);font-family:var(--mincho);font-weight:800;border:1.5px solid var(--c);
+  box-shadow:0 0 0 2px #0d1230,0 0 0 3px var(--c);
+  box-shadow:0 0 0 2px #0d1230,0 0 0 3px color-mix(in srgb,var(--c) 50%,transparent),inset 0 0 12px color-mix(in srgb,var(--c) 25%,transparent);
+}
+.seal.l1{font-size:15px}.seal.l2{font-size:11px}.seal.l3{font-size:9px}
+.nm2{font-size:13px;font-weight:600;line-height:1.5}
+.dt{white-space:nowrap;font-variant-numeric:tabular-nums}
+.dt.nil{color:var(--muted)}
+.dt.due{color:var(--u);font-weight:700}
+.r{display:block;margin-top:1px;font-size:10px;font-weight:600}
+.mini{
+  display:block;width:60px;height:4px;margin-top:5px;background:rgba(255,255,255,.12);overflow:hidden;
+  -webkit-mask-image:repeating-linear-gradient(90deg,#000 0 5px,transparent 5px 7px);
+  mask-image:repeating-linear-gradient(90deg,#000 0 5px,transparent 5px 7px);
+}
+.mini i{display:block;height:100%;background:var(--u);transform-origin:left;animation:fillbar .9s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*50ms + .35s)}
+.empty{text-align:center;color:var(--muted);padding:50px 0;line-height:1.8}
+
+/* 表の絞り込みタブ */
+#tabs{position:relative;--n:3;display:flex;gap:4px;margin:12px 0 0;padding:4px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.03)}
+.tab{flex:1;background:none;border:0;border-radius:999px;color:var(--muted);font:inherit;font-size:13px;padding:10px 4px;white-space:nowrap;position:relative;z-index:1;transition:color .3s}
+.tab small{font-size:11px;margin-left:5px;opacity:.7}
+.tab.on{color:#0a0a1f;font-weight:700}
+.tab:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* 追加ボタン */
+#fab{
+  position:fixed;right:max(20px,env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 22px);width:60px;height:60px;border-radius:50%;
+  border:0;background:linear-gradient(135deg,#4fe3ff,#8b7bff 55%,#ff6bd6);color:#0a0a1f;font-size:32px;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.5),0 0 0 4px rgba(139,123,255,.2);
+}
+#fab{transition:transform .2s}
+#fab:active{transform:scale(.94) rotate(90deg)}
+#fab:focus-visible,.btn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* 入力シート */
+#overlay{position:fixed;inset:0;background:rgba(4,7,18,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+#overlay.open{opacity:1;pointer-events:auto}
+#sheet{
+  position:fixed;left:0;right:0;bottom:0;max-width:640px;margin:0 auto;max-height:94vh;max-height:94dvh;overscroll-behavior:contain;overflow:auto;z-index:21;
+  background:#0b1030 repeating-radial-gradient(circle at 50% -30%,transparent 0 13px,rgba(139,123,255,.06) 13px 14px);
+  border:1px solid rgba(139,123,255,.55);border-bottom:0;border-radius:18px 18px 0 0;
+  padding:10px 20px calc(env(safe-area-inset-bottom) + 22px);box-shadow:0 -18px 50px rgba(0,0,0,.55);
+  transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);
+}
+#sheet.open{transform:none}
+.grip,.sheet-head{touch-action:none}
+.grip{width:42px;height:4px;margin:0 auto 16px;border-radius:2px;background:rgba(139,123,255,.5)}
+
+/* 見出しと、入力中の印章プレビュー */
+.sheet-head{display:flex;align-items:center;gap:18px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+#sheet h2{display:flex;align-items:center;gap:10px;margin:0;font-family:var(--mincho);font-size:21px;letter-spacing:.08em}
+#sheet h2::before{content:"";width:8px;height:8px;background:var(--acc);transform:rotate(45deg)}
+.pv-name{margin:8px 0 0;min-height:1.5em;font-size:12px;line-height:1.5;color:var(--muted);word-break:break-all}
+.pv{flex:none;width:76px;height:76px;
+  box-shadow:0 0 0 3px #0b1030,0 0 0 4px var(--c);
+  box-shadow:0 0 0 3px #0b1030,0 0 0 4px color-mix(in srgb,var(--c) 50%,transparent),0 0 26px color-mix(in srgb,var(--c) 30%,transparent),inset 0 0 16px color-mix(in srgb,var(--c) 25%,transparent);
+}
+.pv.l1{font-size:24px}.pv.l2{font-size:16px}.pv.l3{font-size:12px}
+
+/* 入力欄 */
+label,.lbl{display:flex;align-items:center;gap:8px;margin:20px 0 8px;font-size:11px;letter-spacing:.14em;color:var(--muted)}
+label small,.lbl small{padding:0 8px;border:1px solid rgba(139,123,255,.5);border-radius:999px;font-size:10px;letter-spacing:.06em;color:var(--acc);white-space:nowrap}
+small.opt{border-color:var(--line);color:var(--muted)}
+input{
+  width:100%;min-height:50px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(4,6,20,.65);color:var(--ink);caret-color:var(--acc);font:inherit;font-size:16px;-webkit-appearance:none;appearance:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+input::placeholder{color:#59627f}
+input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(139,123,255,.2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.two input{min-width:0;max-width:100%}
+input[type="date"],input[type="month"]{
+  display:block;text-align:left;padding-right:40px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238e97b3' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;background-size:18px;
+}
+input[type="date"]::-webkit-date-and-time-value,input[type="month"]::-webkit-date-and-time-value{text-align:left;min-height:1.3em}
+.lrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:20px 0 8px}
+.lrow label{margin:0}
+.clr{min-height:30px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--muted);font:inherit;font-size:11px}
+.clr:active{color:var(--acc);border-color:var(--acc)}
+
+/* 資格区分の選択 */
+.seg{display:flex;gap:10px}
+.seg label{flex:1;position:relative;display:block;margin:0;font-size:14px;letter-spacing:.04em;color:var(--ink)}
+.seg input{position:absolute;inset:0;width:100%;height:100%;min-height:0;opacity:0;padding:0}
+.seg span{
+  display:flex;align-items:center;justify-content:center;gap:8px;padding:15px 6px;border:1px solid var(--line);border-radius:10px;
+  background:rgba(4,6,20,.65);color:var(--muted);transition:all .2s;
+}
+.seg span::before{content:"";width:8px;height:8px;background:var(--c);transform:rotate(45deg);opacity:.5}
+.seg input:checked+span{
+  border-color:var(--c);color:var(--c);font-weight:700;box-shadow:inset 0 0 0 1px var(--c);
+  box-shadow:inset 0 0 0 1px var(--c),0 0 18px color-mix(in srgb,var(--c) 28%,transparent);
+  background:color-mix(in srgb,var(--c) 10%,rgba(4,6,20,.65));
+}
+.seg input:checked+span::before{opacity:1;box-shadow:0 0 8px var(--c)}
+.seg input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ボタン */
+.hint{min-height:1.6em;margin:8px 0 0;font-size:11px;line-height:1.6;color:var(--muted)}
+.row2{display:flex;gap:10px;margin-top:22px}
+.btn{
+  flex:1;min-height:52px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);
+  color:var(--ink);font:inherit;font-size:15px;font-weight:600;letter-spacing:.08em;
+}
+.btn:active{transform:scale(.98)}
+.btn.primary{flex:1.6;background:linear-gradient(135deg,#4fe3ff,#8b7bff 55%,#ff6bd6);border-color:#8b7bff;color:#0a0a1f;box-shadow:0 6px 18px rgba(139,123,255,.25)}
+.btn.danger{flex:none;padding:0 18px;color:#ff8a8a;border-color:rgba(255,138,138,.35)}
+.btn.renew{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin-top:12px;
+  border-color:rgba(139,123,255,.6);background:rgba(139,123,255,.08);color:var(--acc);font-size:14px;
+}
+.btn.renew::before{content:"↻";font-size:17px}
+/* 動き(いずれも控えめ。「視差効果を減らす」設定では止まります) */
+#rows{position:relative;z-index:1}
+.rays{
+  position:absolute;left:50%;top:50%;width:900px;height:900px;margin:-450px 0 0 -450px;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg,rgba(139,123,255,.055) 0 4deg,transparent 4deg 12deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0,transparent 34%);mask-image:radial-gradient(circle,#000 0,transparent 34%);
+  animation:spin 140s linear infinite;
+}
+.tablewrap h2{animation:rise .7s .1s cubic-bezier(.2,.8,.2,1) both}
+.note{animation:rise .7s .2s cubic-bezier(.2,.8,.2,1) both}
+#tabs{animation:rise .7s .25s cubic-bezier(.2,.8,.2,1) both}
+.thumb{
+  position:absolute;top:4px;bottom:4px;left:4px;pointer-events:none;border-radius:999px;
+  width:calc((100% - 8px - (var(--n) - 1) * 4px) / var(--n));
+  background:linear-gradient(135deg,#4fe3ff,#8b7bff 55%,#ff6bd6);box-shadow:0 0 18px rgba(139,123,255,.35);
+  transform:translateX(calc(var(--i,0) * (100% + 4px)));transition:transform .38s cubic-bezier(.3,1.25,.4,1);
+}
+.row .seal{animation:stamp .6s cubic-bezier(.2,.9,.3,1.25) both;animation-delay:calc(var(--i,0)*50ms + .2s);transition:transform .15s}
+.row:active .seal{transform:scale(.9)}
+#fab::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(127,233,255,.7);pointer-events:none;animation:ping 3.4s ease-out 1.5s infinite}
+#sheet.open form>*{animation:rise2 .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0)*45ms + .12s)}
+#sheet.open .pv{animation:stamp .6s .2s cubic-bezier(.2,.9,.3,1.25) both}
+@keyframes grow{from{transform:scaleX(0)}}
+@keyframes pop{from{transform:rotate(-120deg) scale(0)}}
+@keyframes stamp{from{opacity:0;transform:scale(1.45) rotate(-8deg)}}
+@keyframes fillbar{from{transform:scaleX(0)}}
+@keyframes ping{0%{transform:scale(1);opacity:.8}65%,100%{transform:scale(1.7);opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{to{transform:translate3d(0,-16px,0) scale(1.05)}}
+@keyframes rise2{from{opacity:0;transform:translateY(10px)}}
+
+/* ===== 宇宙テーマ ===== */
+:root{--grad:linear-gradient(90deg,#4fe3ff,#8b7bff 50%,#ff6bd6)}
+
+/* 背景の宇宙(星・流れ星・惑星) */
+.space{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.stars{position:absolute;left:0;top:0;border-radius:50%;animation:twinkle 5s ease-in-out infinite}
+.meteor{position:absolute;width:130px;height:2px;border-radius:2px;opacity:0;background:linear-gradient(90deg,transparent,#fff);filter:drop-shadow(0 0 4px #9fe9ff);animation:meteor 11s linear infinite}
+.m1{top:10%;left:62%}
+.m2{top:36%;left:84%;animation-delay:6s;animation-duration:14s}
+.planet{
+  position:absolute;right:-90px;bottom:-70px;width:230px;height:230px;border-radius:50%;opacity:.55;
+  background:radial-gradient(circle at 32% 30%,#9d7bff,#3b1f8f 52%,#0a0926 80%);
+  box-shadow:0 0 70px rgba(139,92,255,.35),inset -18px -22px 40px rgba(0,0,10,.6);
+}
+.planet::after{content:"";position:absolute;left:-42%;right:-42%;top:38%;bottom:38%;border:5px solid rgba(255,140,225,.35);border-radius:50%;transform:rotate(-22deg);box-shadow:0 0 18px rgba(255,120,220,.25)}
+@keyframes twinkle{0%,100%{opacity:.2}50%{opacity:1}}
+@keyframes meteor{0%{opacity:0;transform:rotate(32deg) translateX(0)}1.5%{opacity:1}7%{opacity:0;transform:rotate(32deg) translateX(520px)}100%{opacity:0}}
+
+/* 上の帯 */
+.hero{
+  background:radial-gradient(ellipse at 15% 130%,rgba(255,107,214,.22),transparent 55%),radial-gradient(ellipse at 90% -30%,rgba(79,227,255,.22),transparent 55%),rgba(6,8,26,.72) repeating-radial-gradient(circle at 50% 135%,transparent 0 13px,rgba(139,123,255,.10) 13px 14px);
+  border-color:rgba(127,233,255,.45);box-shadow:inset 0 0 40px rgba(0,0,20,.5),0 0 34px rgba(139,123,255,.25),0 14px 34px rgba(0,0,0,.4);
+}
+.hero::after{border-color:rgba(127,233,255,.22)}
+.rays{background:repeating-conic-gradient(from 0deg,rgba(150,130,255,.08) 0 4deg,transparent 4deg 12deg)}
+.nm{font-size:26px;font-weight:900;padding:8px 24px;text-shadow:0 0 8px var(--c),0 0 22px var(--c)}
+
+/* 派手な文字 */
+.grad,#sheet h2{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 0 10px rgba(139,123,255,.6))}
+.tablewrap h2{font-size:22px;font-weight:800;letter-spacing:.14em}
+.tablewrap h2::before,.gh::before,#sheet h2::before,.seg span::before{content:"✦";width:auto;height:auto;background:none;box-shadow:none;transform:none;line-height:1}
+.tablewrap h2::before,.gh::before{font-size:17px;color:var(--c,#8be9ff);text-shadow:0 0 10px var(--c,#8be9ff)}
+#sheet h2::before{font-size:17px;color:#8be9ff;-webkit-text-fill-color:#8be9ff}
+.seg span::before{font-size:15px;color:var(--c);opacity:.55}
+.seg input:checked+span::before{box-shadow:none;text-shadow:0 0 8px var(--c)}
+.gh{font-size:19px;font-weight:800;letter-spacing:.1em}
+.gh span{background:linear-gradient(90deg,var(--c),#fff 160%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 9px var(--c))}
+.gh em{box-shadow:0 0 10px var(--c);text-shadow:0 0 6px var(--c)}
+.nm2{color:#f3f6ff;font-weight:700;text-shadow:0 0 14px rgba(139,123,255,.4)}
+.dt{color:#e1e8ff;font-weight:600}
+.dt.nil{color:var(--muted)}
+.dt.due{text-shadow:0 0 12px var(--u)}
+.row .seal{font-weight:900;text-shadow:0 0 10px var(--c)}
+.row td{background:linear-gradient(180deg,#101538,#0b0f2c)}
+.tab{font-weight:700;letter-spacing:.06em}
+#tabs{border-color:rgba(127,233,255,.3);background:rgba(10,14,40,.6)}
+#sheet{
+  background:radial-gradient(ellipse at 85% -10%,rgba(255,107,214,.14),transparent 55%),radial-gradient(ellipse at 10% 0%,rgba(79,227,255,.12),transparent 55%),#0b1030 repeating-radial-gradient(circle at 50% -30%,transparent 0 13px,rgba(139,123,255,.07) 13px 14px);
+  border-color:rgba(127,233,255,.45);
+}
+
+/* バックアップ・通知 */
+.tools{display:flex;gap:10px;margin-top:26px}
+.tools button{flex:1;min-height:44px;padding:0 8px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);color:var(--muted);font:inherit;font-size:12px;letter-spacing:.04em}
+.tools button:active{color:var(--acc);border-color:var(--acc)}
+.tools-note{margin:8px 2px 0;font-size:10.5px;line-height:1.6;color:var(--muted);text-align:center}
+#toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 100px);z-index:30;max-width:86vw;padding:11px 18px;
+  border:1px solid rgba(139,123,255,.55);border-radius:999px;background:#161b45;color:var(--ink);font-size:13px;text-align:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;transform:translate(-50%,16px);transition:opacity .3s,transform .3s;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* 小さい画面(iPhone SE など) */
+@media (max-width:370px){
+  .seal{width:40px;height:40px}
+  .row td{padding:9px 4px}
+  .row td:first-child{padding-left:10px}
+  .dt{font-size:11.5px}
+  .mini{width:50px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #toast{transition:none}
+  .rays,.gh::before,.gh::after,.tablewrap h2,.tablewrap h2::before,.tablewrap h2::after,.note,#tabs,.row .seal,.mini i,#fab::after,body::before,#sheet.open form>*,#sheet.open .pv{animation:none}
+  .thumb,#fab{transition:none}
+  .stars,.meteor{animation:none}
+  .meteor{display:none}
+  #sheet,#overlay{transition:none}
+  .lane{overflow-x:auto;-webkit-mask-image:none;mask-image:none}
+  .track{animation:none}
+  .set+.set{display:none}
+  .row{animation:none}
+  .row.hot td:first-child{animation:none}
+  .hero{animation:none}
+  .sheen{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="marquee" class="hero" aria-label="取得した資格"><i class="rays"></i><div id="rows"></div><i class="sheen"></i></div>
+
+  <div class="tablewrap">
+    <h2><span class="grad">取得済み一覧</span></h2>
+    <p class="note">行をタップすると、編集・削除ができます。</p>
+    <nav id="tabs"></nav>
+    <div id="table"></div>
+    <div class="tools">
+      <button type="button" id="btn-backup">バックアップをコピー</button>
+      <button type="button" id="btn-restore">バックアップから復元</button>
+    </div>
+    <p class="tools-note">端末のデータが消えたときに備えて、ときどきコピーして保管してください。</p>
+  </div>
+</div>
+<button id="fab" aria-label="資格を追加">＋</button>
+<div id="toast" role="status"></div>
+
+<div id="overlay"></div>
+<div id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="grip"></div>
+  <div class="sheet-head">
+    <div id="pv" class="seal pv l1"><span id="pv-text">-</span></div>
+    <div>
+      <h2 id="sheet-title">資格を追加</h2>
+      <p class="pv-name" id="pv-name"></p>
+    </div>
+  </div>
+  <form id="form">
+    <div class="lbl">資格区分<small>必須</small></div>
+    <div class="seg" id="f-category"></div>
+
+    <label for="f-name">資格名<small>必須</small></label>
+    <input id="f-name" placeholder="例:基本情報技術者試験" required autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="next">
+
+    <label for="f-abbr">略称<small class="opt">上のスライドに流れます</small></label>
+    <input id="f-abbr" placeholder="例:FE" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done">
+
+    <div class="two">
+      <div>
+        <div class="lrow"><label for="f-acquired">取得日</label><button type="button" class="clr" data-clr="f-acquired">クリア</button></div>
+        <input id="f-acquired" type="month">
+      </div>
+      <div>
+        <div class="lrow"><label for="f-renewal">更新日時</label><button type="button" class="clr" data-clr="f-renewal">クリア</button></div>
+        <input id="f-renewal" type="date">
+      </div>
+    </div>
+    <button type="button" class="btn renew" id="btn-renew"></button>
+    <p class="hint" id="renew-note"></p>
+
+    <div class="row2">
+      <button type="button" class="btn danger" id="btn-delete">削除</button>
+      <button type="button" class="btn" id="btn-cancel">キャンセル</button>
+      <button type="submit" class="btn primary">保存</button>
+    </div>
+  </form>
+</div>
+
+<script>
+/* ================================================================
+   設定エリア(ここだけ直せば、見た目やデータを変えられます)
+   ================================================================ */
+
+// 保存先の名前。初期データを書き換えたら、末尾の数字を変えると読み込み直されます
+const STORAGE_KEY = "my-certifications-v1";
+
+// 資格区分(この2つだけ。並び順と色もここで決まります)
+const CATEGORIES = [
+  { name: "国家資格",     color: "#ff7ad9" },
+  { name: "ベンダー資格", color: "#4fe3ff" },
+];
+
+// 資格名が流れる速さ(1秒あたりのピクセル数)。0にすると止まります
+const MARQUEE_SPEED = 45;
+
+// 入力画面の「延長」ボタンで、更新日時を何年延ばすか
+const RENEW_YEARS = 1;
+
+// 更新日が近づくほど目立たせる段階(上から順に、残り日数がupTo以下なら採用)
+//   calm:true … 落ち着いた表示(要確認に数えない) / hot:true … 一覧の左端が脈打って知らせる
+const STAGES = [
+  { upTo: -1,       color: "#ff5d6c", label: "期限切れ",     hot: true },
+  { upTo: 30,       color: "#ff7a45", label: "まもなく更新", hot: true },
+  { upTo: 90,       color: "#ffb84d", label: "更新が近づいています" },
+  { upTo: 180,      color: "#e6d95c", label: "更新の準備を" },
+  { upTo: Infinity, color: "#5fd6a0", label: "余裕あり", calm: true },
+];
+
+// 表の細いバーを「残り何日から」満たしていくか
+const BAR_RANGE_DAYS = 365;
+
+// 初期データ(初回起動のときだけ使われます)。acquired は年月("2021-09")、renewal は年月日。更新不要の資格は renewal を "" にします
+const INITIAL_DATA = [
+  { category: "国家資格",     name: "ITパスポート試験",                 abbr: "IP",     acquired: "2019-09", renewal: "" },
+  { category: "国家資格",     name: "基本情報技術者試験",               abbr: "FE",     acquired: "2021-04", renewal: "" },
+  { category: "ベンダー資格", name: "Microsoft 365 Certified: Administrator Expert", abbr: "MS-102", acquired: "2024-03", renewal: "2026-12-05" },
+  { category: "ベンダー資格", name: "Microsoft Certified: Azure Administrator Associate", abbr: "AZ-104", acquired: "2025-11", renewal: "2026-11-02" },
+  { category: "ベンダー資格", name: "Microsoft Power Platform Fundamentals", abbr: "PL-900", acquired: "2023-08", renewal: "" },
+];
+
+/* ================================================================
+   ここから下は仕組みの部分
+   ================================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dot = d => d ? d.replace(/-/g, ".") : "-";
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const RENEW_NOTE = "更新が不要な資格は、更新日時を空(クリア)にします。1年ごとに更新する資格は、上のボタンで日付を延ばせます(「保存」で反映)。";
+
+const ALL = "すべて";
+let items = load();
+let editingId = null;
+let filter = ALL;
+
+function load() {
+  let list;
+  try { const s = localStorage.getItem(STORAGE_KEY); if (s) list = JSON.parse(s); } catch (e) {}
+  if (!list) list = INITIAL_DATA.map(d => ({ id: uid(), ...d }));
+  return normalize(list);
+}
+// 区分が2つに該当しない古いデータは、最後の区分にまとめる
+function normalize(list) {
+  const names = CATEGORIES.map(c => c.name);
+  return list.map(i => ({ ...i, acquired: (i.acquired || "").slice(0, 7), category: names.includes(i.category) ? i.category : names[names.length - 1] }));
+}
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {} }
+const colorOf = cat => (CATEGORIES.find(c => c.name === cat) || {}).color || "#a3acc2";
+
+// 更新日までの状態を計算する
+function status(renewal) {
+  if (!renewal) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((new Date(renewal + "T00:00:00") - today) / 86400000);
+  const stage = STAGES.find(s => days <= s.upTo);
+  const pct = days < 0 ? 100 : Math.round((1 - Math.min(days, BAR_RANGE_DAYS) / BAR_RANGE_DAYS) * 100);
+  return { days, stage, pct };
+}
+
+// 日付に年数を足す(うるう日は月末に寄せる)
+function addYears(dateStr, n) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y + n, m - 1, d);
+  if (dt.getMonth() !== m - 1) dt.setDate(0);
+  const p = v => String(v).padStart(2, "0");
+  return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+}
+
+// 区分の順、同じ区分では取得日が新しい順
+function sorted() {
+  const order = n => CATEGORIES.findIndex(c => c.name === n);
+  return [...items].sort((a, b) => order(a.category) - order(b.category) || (b.acquired || "").localeCompare(a.acquired || ""));
+}
+
+/* ---- 流れる略称(略称が空のときは資格名)。区分ごとに2段 ---- */
+function buildMarquee() {
+  const hero = $("marquee"), rows = $("rows");
+  if (!items.length) { hero.hidden = true; return; }
+  hero.hidden = false;
+  const list = sorted();
+  // 区分ごとに1段。2段目は逆向きに流れる
+  rows.innerHTML = CATEGORIES.map((c, k) => {
+    const mine = list.filter(i => i.category === c.name);
+    if (!mine.length) return "";
+    const one = mine.map(i => `<span class="nm" style="--c:${c.color}">${esc(i.abbr || i.name)}</span>`).join("");
+    return `<div class="lane${k % 2 ? " rev" : ""}"><div class="track"><div class="set">${one}</div></div></div>`;
+  }).join("");
+  // 短いときは繰り返して、画面の幅より長くしてから2セット並べる
+  rows.querySelectorAll(".lane").forEach(lane => {
+    const track = lane.querySelector(".track"), set = track.firstChild, one = set.innerHTML;
+    const reps = Math.min(30, Math.max(1, Math.ceil(hero.clientWidth / (set.offsetWidth || 1))));
+    const half = one.repeat(reps);
+    track.innerHTML = `<div class="set">${half}</div><div class="set" aria-hidden="true">${half}</div>`;
+    track.style.setProperty("--dur", (track.firstChild.offsetWidth / (MARQUEE_SPEED || 1)) + "s");
+    if (!MARQUEE_SPEED) track.style.animation = "none";
+  });
+}
+// 指で触っている間は止める
+["pointerdown", "touchstart"].forEach(ev => $("marquee").addEventListener(ev, () => $("marquee").classList.add("hold"), { passive: true }));
+["pointerup", "pointercancel", "touchend", "touchcancel"].forEach(ev => $("marquee").addEventListener(ev, () => $("marquee").classList.remove("hold"), { passive: true }));
+let resizeTimer;
+addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(buildMarquee, 200); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(buildMarquee);
+
+/* ---- 一覧表 ---- */
+// 絞り込みタブ(件数つき)。つまみが選んだタブへ滑るように動く
+function renderTabs() {
+  const names = [ALL, ...CATEGORIES.map(c => c.name)], tabs = $("tabs");
+  if (!tabs.querySelector(".thumb")) {
+    tabs.innerHTML = `<i class="thumb"></i>` + names.map(c => `<button class="tab" data-cat="${esc(c)}"><span>${esc(c)}</span><small></small></button>`).join("");
+    tabs.style.setProperty("--n", names.length);
+  }
+  tabs.querySelectorAll(".tab").forEach(b => {
+    const c = b.dataset.cat;
+    b.classList.toggle("on", c === filter);
+    b.querySelector("small").textContent = c === ALL ? items.length : items.filter(i => i.category === c).length;
+  });
+  tabs.style.setProperty("--i", names.indexOf(filter));
+}
+
+function renderTable() {
+  renderTabs();
+  if (!items.length) { $("table").innerHTML = `<p class="empty">まだ資格がありません。<br>右下の「＋」から追加してください。</p>`; return; }
+  const list = sorted().filter(i => filter === ALL || i.category === filter);
+  if (!list.length) { $("table").innerHTML = `<p class="empty">この区分の資格はまだありません。</p>`; return; }
+
+  let html = `<table class="tbl"><thead><tr><th>略称</th><th>資格名</th><th>取得日</th><th>更新日時</th></tr></thead><tbody>`;
+  CATEGORIES.forEach(cat => {
+    const rows = list.filter(i => i.category === cat.name);
+    if (!rows.length) return;
+    html += `<tr class="grp" style="--c:${cat.color}"><th colspan="4"><div class="gh"><span>${esc(cat.name)}</span><em>${rows.length}</em></div></th></tr>`;
+    rows.forEach(i => {
+      const s = status(i.renewal);
+      const r = s ? (s.days < 0 ? "期限切れ" : s.days === 0 ? "本日まで" : `あと${s.days}日`) : "";
+      const ab = i.abbr || "-", n = [...ab].length;
+      html += `<tr class="row${s && !s.stage.calm ? " warn" : ""}${s && s.stage.hot ? " hot" : ""}" data-id="${i.id}" tabindex="0" style="--c:${cat.color};--u:${s ? s.stage.color : "#8e97b3"};--i:${list.indexOf(i)}">
+        <td><span class="seal l${n <= 3 ? 1 : n <= 5 ? 2 : 3}">${esc(ab)}</span></td>
+        <td class="nm2">${esc(i.name)}</td>
+        <td class="dt${i.acquired ? "" : " nil"}">${esc(dot(i.acquired))}</td>
+        <td class="dt${s ? " due" : " nil"}">${esc(dot(i.renewal))}${s ? `<span class="r">${r}</span><span class="mini"><i style="width:${s.pct}%"></i></span>` : ""}</td>
+      </tr>`;
+    });
+  });
+  $("table").innerHTML = html + `</tbody></table>`;
+}
+
+function render() {
+  buildMarquee();
+  renderTable();
+}
+
+$("tabs").addEventListener("click", e => {
+  const t = e.target.closest(".tab");
+  if (t) { filter = t.dataset.cat; renderTable(); }
+});
+$("table").addEventListener("click", e => { const r = e.target.closest("tr.row"); if (r) openSheet(r.dataset.id); });
+$("table").addEventListener("keydown", e => {
+  const r = e.target.closest("tr.row");
+  if (r && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openSheet(r.dataset.id); }
+});
+
+/* ---- 入力シート ---- */
+// 入力中の内容を、印章のプレビューにすぐ反映する
+function updatePreview() {
+  const radio = $("form").querySelector('input[name="category"]:checked');
+  const name = $("f-name").value.trim(), abbr = $("f-abbr").value.trim();
+  const text = abbr || name.charAt(0) || "-";
+  const n = [...text].length;
+  $("pv").style.setProperty("--c", radio ? colorOf(radio.value) : "#8e97b3");
+  $("pv").className = `seal pv l${n <= 3 ? 1 : n <= 5 ? 2 : 3}`;
+  $("pv-text").textContent = text;
+  $("pv-name").textContent = name;
+  document.querySelectorAll(".clr").forEach(b => { b.style.visibility = $(b.dataset.clr).value ? "visible" : "hidden"; });
+}
+$("form").addEventListener("input", updatePreview);
+$("form").addEventListener("change", updatePreview);
+
+function openSheet(id) {
+  editingId = id || null;
+  const it = items.find(i => i.id === id) || {};
+  const cur = it.category || CATEGORIES[0].name;
+  $("sheet-title").textContent = id ? "資格を編集" : "資格を追加";
+  $("f-category").innerHTML = CATEGORIES.map(c =>
+    `<label style="--c:${c.color}"><input type="radio" name="category" value="${esc(c.name)}"${c.name === cur ? " checked" : ""}><span>${esc(c.name)}</span></label>`).join("");
+  $("f-name").value = it.name || "";
+  $("f-abbr").value = it.abbr || "";
+  $("f-acquired").value = it.acquired || "";
+  $("f-renewal").value = it.renewal || "";
+  $("btn-renew").textContent = `更新日時を${RENEW_YEARS}年延長する`;
+  $("renew-note").textContent = RENEW_NOTE;
+  $("btn-delete").style.display = id ? "" : "none";
+  updatePreview();
+  $("sheet").scrollTop = 0;
+  [...$("form").children].forEach((el, k) => el.style.setProperty("--d", k));
+  document.documentElement.classList.add("lock");
+  $("overlay").classList.add("open");
+  $("sheet").classList.add("open");
+}
+function closeSheet() {
+  document.documentElement.classList.remove("lock");
+  $("overlay").classList.remove("open");
+  $("sheet").classList.remove("open");
+  document.activeElement && document.activeElement.blur();
+}
+
+// 更新日時を1年(RENEW_YEARS)延ばす。押すたびに延びる
+$("btn-renew").addEventListener("click", () => {
+  const cur = $("f-renewal").value;
+  if (!cur) { $("renew-note").textContent = "先に更新日時を入力してください。"; return; }
+  const next = addYears(cur, RENEW_YEARS);
+  $("f-renewal").value = next;
+  $("renew-note").textContent = `更新日時を ${dot(next)} にしました。「保存」を押すと反映されます。`;
+});
+
+$("form").addEventListener("submit", e => {
+  e.preventDefault();
+  const data = {
+    category: $("form").querySelector('input[name="category"]:checked').value,
+    name: $("f-name").value.trim(),
+    abbr: $("f-abbr").value.trim(),
+    acquired: $("f-acquired").value,
+    renewal: $("f-renewal").value,
+  };
+  if (editingId) Object.assign(items.find(i => i.id === editingId), data);
+  else items.push({ id: uid(), ...data });
+  save(); closeSheet(); render(); toast("保存しました");
+});
+$("btn-delete").addEventListener("click", () => {
+  if (!confirm("この資格を削除しますか?")) return;
+  items = items.filter(i => i.id !== editingId);
+  save(); closeSheet(); render(); toast("削除しました");
+});
+$("btn-cancel").addEventListener("click", closeSheet);
+$("overlay").addEventListener("click", closeSheet);
+$("fab").addEventListener("click", () => openSheet());
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+
+/* ---- iPhoneでの使いやすさ ---- */
+// Safariで、タップしたときの反応(:active)を効かせる
+document.addEventListener("touchstart", () => {}, { passive: true });
+
+// 入力欄以外で文字が選択された状態は、すぐに解除する(選択の吹き出しが残らないように)
+document.addEventListener("selectionchange", () => {
+  const a = document.activeElement;
+  if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA")) return;
+  const sel = window.getSelection && window.getSelection();
+  if (sel && !sel.isCollapsed) sel.removeAllRanges();
+});
+
+// 日付の「クリア」ボタン(iPhoneの日付入力は、選んだ日付を消せないため)
+$("form").addEventListener("click", e => {
+  const b = e.target.closest(".clr");
+  if (!b) return;
+  $(b.dataset.clr).value = "";
+  updatePreview();
+});
+
+// キーボードの「完了」で、途中なのに保存されてしまわないようにする
+$("form").addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.isComposing || e.keyCode === 229 || e.target.tagName !== "INPUT") return;
+  e.preventDefault();
+  if (e.target.id === "f-name") $("f-abbr").focus(); else e.target.blur();
+});
+
+// キーボードが出たとき、入力中の欄が隠れないようにする
+$("sheet").addEventListener("focusin", e => {
+  if (e.target.matches("#f-name, #f-abbr")) setTimeout(() => e.target.scrollIntoView({ block: "center", behavior: "smooth" }), 350);
+});
+
+// 入力画面は、上の部分を下にスワイプして閉じられる
+(function () {
+  const sh = $("sheet");
+  let y0 = null, dy = 0;
+  sh.querySelectorAll(".grip, .sheet-head").forEach(el => {
+    el.addEventListener("touchstart", e => { y0 = e.touches[0].clientY; dy = 0; sh.style.transition = "none"; }, { passive: true });
+    el.addEventListener("touchmove", e => { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); sh.style.transform = `translateY(${dy}px)`; }, { passive: true });
+    const end = () => { if (y0 === null) return; y0 = null; sh.style.transition = ""; sh.style.transform = ""; if (dy > 90) closeSheet(); dy = 0; };
+    el.addEventListener("touchend", end);
+    el.addEventListener("touchcancel", end);
+  });
+})();
+
+/* ---- 宇宙の背景(星・流れ星・惑星) ---- */
+(function () {
+  const layers = [{ n: 40, size: 1, dur: 3.2 }, { n: 30, size: 1, dur: 4.7 }, { n: 20, size: 2, dur: 6.1 }, { n: 12, size: 3, dur: 8 }];
+  const colors = ["#ffffff", "#cfe3ff", "#ffd9f5", "#bff4ff"];
+  const host = document.createElement("div");
+  host.className = "space";
+  host.setAttribute("aria-hidden", "true");
+  host.innerHTML = layers.map(() => `<i class="stars"></i>`).join("") + `<i class="meteor m1"></i><i class="meteor m2"></i><i class="planet"></i>`;
+  document.body.prepend(host);
+  host.querySelectorAll(".stars").forEach((el, k) => {
+    const L = layers[k], r = max => (Math.random() * max).toFixed(1);
+    el.style.width = el.style.height = L.size + "px";
+    el.style.animationDuration = L.dur + "s";
+    el.style.animationDelay = "-" + (k * 1.3).toFixed(1) + "s";
+    el.style.boxShadow = Array.from({ length: L.n }, () => `${r(100)}vw ${r(100)}vh 0 0 ${colors[Math.floor(Math.random() * colors.length)]}`).join(",");
+  });
+})();
+
+/* ---- 通知(画面の下に一瞬出る) ---- */
+let toastTimer;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ---- バックアップ ---- */
+$("btn-backup").addEventListener("click", async () => {
+  const text = JSON.stringify(items);
+  try { await navigator.clipboard.writeText(text); toast("コピーしました。メモアプリなどに貼り付けて保管してください"); }
+  catch (e) { prompt("下の文字をすべてコピーして、メモアプリなどに保管してください", text); }
+});
+$("btn-restore").addEventListener("click", () => {
+  const text = prompt("コピーしておいたバックアップの文字を、貼り付けてください");
+  if (!text) return;
+  try {
+    const list = JSON.parse(text.trim());
+    if (!Array.isArray(list) || !list.every(i => i && typeof i.name === "string")) throw new Error("形式が違います");
+    if (!confirm(`${list.length}件のデータに置き換えます。いまのデータは消えます。よろしいですか?`)) return;
+    items = normalize(list.map(i => ({ ...i, id: i.id || uid() })));
+    save(); render(); toast("復元しました");
+  } catch (e) { alert("読み込めませんでした。コピーした文字が、すべて貼り付けられているか確認してください。"); }
+});
+// データを消されにくくする(許可されない場合もあります)
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
+
+/* ---- ホーム画面に追加したときのアイコン ---- */
+try {
+  const c = document.createElement("canvas"); c.width = c.height = 180;
+  const g = c.getContext("2d");
+  g.fillStyle = "#050714"; g.fillRect(0, 0, 180, 180);
+  g.strokeStyle = "#7fe9ff";
+  g.lineWidth = 3; g.beginPath(); g.arc(90, 90, 62, 0, Math.PI * 2); g.stroke();
+  g.lineWidth = 1.5; g.beginPath(); g.arc(90, 90, 71, 0, Math.PI * 2); g.stroke();
+  g.fillStyle = "#7fe9ff"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.font = '700 68px "Hiragino Mincho ProN","Yu Mincho",serif';
+  g.fillText("資", 90, 94);
+  const link = document.createElement("link");
+  link.rel = "apple-touch-icon"; link.href = c.toDataURL("image/png");
+  document.head.appendChild(link);
+} catch (e) {}
+
+render();
+</script>
+</body>
+</html>
